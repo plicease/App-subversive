@@ -46,9 +46,17 @@ sub update
     say STDERR "please set SUBVERSION_URL";
     exit 2;
   }
+
+  {
+    my $git = Git::Wrapper->new('.');
+    if([$git->log('-1', 'master')]->[0]->id eq $SET{GIT_COMMIT})
+    {
+      say "up to date";
+      exit;
+    }
+  }
   
   my $root = dir( tempdir( CLEANUP => 0 ) );
-  say "root = $root";
 
   svn('checkout', $SET{SUBVERSION_URL}, $root->subdir('svn'));
   
