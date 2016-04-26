@@ -3,6 +3,14 @@ package App::subversive;
 use strict;
 use warnings;
 use 5.012;
+use Path::Class qw( dir file );
+use File::Temp qw( tempdir );
+use File::chdir;
+use Capture::Tiny qw( capture );
+use Git::Wrapper;
+use File::Find ();
+use File::Copy qw( cp );
+use Email::Address;
 
 # ABSTRACT: Export git to Subversion
 # VERSION
@@ -31,7 +39,131 @@ sub setup
 sub update
 {
   setup();
+  use autodie;
+
+  unless(defined $SET{SUBVERSION_URL})
+  {
+    say STDERR "please set SUBVERSION_URL";
+    exit 2;
+  }
+  
+  my $root = dir( tempdir( CLEANUP => 0 ) );
+  say "root = $root";
+
+  svn('checkout', $SET{SUBVERSION_URL}, $root->subdir('svn'));
+  
+  unless(-d $root->subdir('svn'))
+  {
+    say STDERR "sub version checkout failed";
+    exit 2;
+  }
+  
+  if($SET{SUBVERSION_LASTDATE})
+  {
+    local $CWD = $root->subdir('svn');
+    svn('propset', 'svn:date', '--revprop', -r => 'HEAD', $SET{SUBVERSION_LASTDATE});
+    delete $SET{SUBVERSION_LASTDATE};
+  }
+  
+  my $git = Git::Wrapper->new($root->subdir('git'));
+  $git->clone($CWD, $git->dir);
+
+  my $commit_start = $SET{GIT_COMMIT};
+  
+  foreach my $log (reverse $git->log('--date=iso'))
+  {
+    if(defined $commit_start)
+    {
+      if($commit_start eq $log->id)
+      {
+        undef $commit_start;
+      }
+      next;
+    }
+    my $date = $log->date;
+    $date =~ s/ /T/;
+    $date =~ s/ /.0Z/;    
+    say "@{[ $log->id ]} $date @{[ [split /\n/, $log->message]->[0] ]}";
+    $git->checkout($log->id);
+
+    local $CWD = $git->dir;
+    
+    my @git_files;
+    File::Find::find(sub {
+      return unless -f $_;
+      my $file = file($File::Find::name);
+      return if ($file->components)[0] eq '.git';
+      push @git_files, $file;
+    }, '.');
+    
+    $CWD = $root->subdir('svn');
+    
+    my @svn_dirs;
+    File::Find::find(sub {
+
+      if(-f $File::Find::name)
+      {
+        my $file = file($File::Find::name);
+        return if grep /^\.svn$/, $file->components;
+        unlink $file;
+      }
+      else
+      {
+        my $dir = dir($File::Find::name);
+        return if grep /^\.svn$/, $dir->components;
+        push @svn_dirs, $dir;
+      }
+    }, '.');
+    
+    foreach my $file (@git_files)
+    {
+      my $git_file = $root->subdir('git')->file($file);
+      $file->parent->mkpath(0, 0700) unless -d $file->parent;
+      cp($git_file => $file) || die "Copy failed for $git_file => $file: $!";
+      svn('add', '--force', '--parents', $file);
+    }
+    
+    my $username = [Email::Address->parse($log->author)]->[0]->address;
+    unless($username)
+    {
+      say STDERR "unable to parse email address from @{[ $log->author ]}";
+      exit 2;
+    }
+
+    svn('commit', 
+      -m => $log->message . "\n\ngit commit: @{[ $log->id ]}", 
+      '--username' => $username,
+    );
+    $SET{GIT_COMMIT} = $log->id;
+    
+    eval { svn('propset', 'svn:date', '--revprop', -r => 'HEAD', $date) };
+    if(my $error = $@)
+    {
+      $SET{SUBVERSION_LASTDATE} = $date;
+      die $error;
+    }
+  }
+  
   0;
+}
+
+sub svn
+{
+  my(@command) = @_;
+  
+  $SET{SUBVERSION_COMMAND} //= 'svn';
+
+  my($out, $err, $ret) = capture {
+    system $SET{SUBVERSION_COMMAND}, @command;
+  };
+  
+  if($? != 0)
+  {
+    say "[out]\n$out" if $out ne '';
+    say "[err]\n$err" if $err ne '';
+    say "ret = $ret";
+    die "command failed: svn @command";
+  }
 }
 
 sub set
@@ -102,7 +234,7 @@ sub TIEHASH
   
   unless(-d '.git')
   {
-    print STDERR "please run for git project root\n";
+    say STDERR "please run for git project root";
     exit 2;
   }
   
