@@ -82,7 +82,7 @@ sub update
     }
     my $date = $log->date;
     $date =~ s/ /T/;
-    $date =~ s/ /.0Z/;    
+    $date =~ s/ .*$/.0Z/;
     say "@{[ $log->id ]} $date @{[ [split /\n/, $log->message]->[0] ]}";
     $git->checkout($log->id);
 
