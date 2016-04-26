@@ -129,6 +129,15 @@ sub update
       say STDERR "unable to parse email address from @{[ $log->author ]}";
       exit 2;
     }
+    
+    foreach my $status_line (split /\n/, svn('status'))
+    {
+      if($status_line =~ /^!\s+(.*)$/)
+      {
+        my $file = $1;
+        svn('rm', '--force' => $file);
+      }
+    }
 
     svn('commit', 
       -m => $log->message . "\n\ngit commit: @{[ $log->id ]}", 
@@ -164,6 +173,8 @@ sub svn
     say "ret = $ret";
     die "command failed: svn @command";
   }
+  
+  defined wantarray ? $out : ();
 }
 
 sub set
