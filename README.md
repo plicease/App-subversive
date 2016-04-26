@@ -20,7 +20,8 @@ The problem with `git-svn` is that it treats Subversion as the authoritative
 source and you frequently have to rebase.  It is almost always what you want if
 you are a git user in a Subversion environment.  We have the problem that for
 management reasons we need a Subversion repository copy as as a backup, but
-we do everything in `git`.  This is a terrible idea, but I am doing it.
+we do everything in `git`.  This is a terrible idea, but I am doing it because
+I have to.
 
 # SUBCOMMANDS
 
