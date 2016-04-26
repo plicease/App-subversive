@@ -115,12 +115,25 @@ sub update
       }
     }, '.');
     
+    my %exe = map { s/ - \*$//; $_ => 1 } split /\n/, svn('propget', 'svn:executable', '-R');
+    use YAML;
+    print YAML::Dump({ exe => \%exe });
+    
     foreach my $file (@git_files)
     {
       my $git_file = $root->subdir('git')->file($file);
       $file->parent->mkpath(0, 0700) unless -d $file->parent;
       cp($git_file => $file) || die "Copy failed for $git_file => $file: $!";
       svn('add', '--force', '--parents', $file);
+      
+      if(-x $file && !$exe{"$file"})
+      {
+        svn('propset', 'svn:executable', 'on', $file);
+      }
+      elsif($exe{"$file"})
+      {
+        svn('propdel', 'svn:executable', $file);
+      }
     }
     
     my $username = [Email::Address->parse($log->author)]->[0]->address;
