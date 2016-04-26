@@ -128,7 +128,7 @@ sub update
       {
         svn('propset', 'svn:executable', 'on', $file);
       }
-      else
+      if(! -x $file && $exe{"$file"})
       {
         if($exe{"$file"})
         {
