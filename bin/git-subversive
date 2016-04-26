@@ -1,0 +1,68 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+use 5.012;
+use Getopt::Long qw( GetOptions );
+use Pod::Usage qw( pod2usage );
+use App::subversive;
+
+# PODNAME: git-subversive
+# ABSTRACT: Export git to Subversion
+# VERSION
+
+=head1 SYNOPSIS
+
+ % git subversive update
+ % git subversive set name value
+ % git subversive unset name
+ % git subversive show [ name ]
+ % git subversive --help
+ % git subversive --version
+
+=head1 DESCRIPTION
+
+B<NOTE>: you almost certainly want C<git-svn>, not this.
+
+This program allows you to export your git repository to a Subversion repository.
+The problem with C<git-svn> is that it treats Subversion as the authoritative
+source and you frequently have to rebase.  It is almost always what you want if
+you are a git user in a Subversion environment.  We have the problem that for
+management reasons we need a Subversion repository copy as as a backup, but
+we do everything in C<git>.  This is a terrible idea, but I am doing it.
+
+=head1 SUBCOMMANDS
+
+=head2 update
+
+=head2 set
+
+=head2 unset
+
+=head2 show
+
+=cut
+
+if(defined $ARGV[0] && $ARGV[0] !~ /^-/)
+{
+  my $arg = shift @ARGV;
+  if($arg =~ /^(update|(un)?set|show)$/)
+  {
+    exit App::subversive->$arg(@ARGV);
+  }
+  else
+  {
+    say STDERR "unknown command $arg";
+    exit 1;
+  }
+}
+
+GetOptions(
+  'help|h'       => sub { pod2usage({ -verbose => 2}) },
+  'version'      => sub {
+    say 'App::subversive version ', ($App::subversive::VERSION // 'dev');
+    exit 1;
+  },
+);
+
+pod2usage(1);
