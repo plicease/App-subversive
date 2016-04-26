@@ -116,8 +116,6 @@ sub update
     }, '.');
     
     my %exe = map { s/ - \*$//; $_ => 1 } split /\n/, svn('propget', 'svn:executable', '-R');
-    use YAML;
-    print YAML::Dump({ exe => \%exe });
     
     foreach my $file (@git_files)
     {
