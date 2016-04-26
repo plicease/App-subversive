@@ -119,6 +119,7 @@ sub update
     
     foreach my $file (@git_files)
     {
+      $DB::single = 1;
       my $git_file = $root->subdir('git')->file($file);
       $file->parent->mkpath(0, 0700) unless -d $file->parent;
       cp($git_file => $file) || die "Copy failed for $git_file => $file: $!";
@@ -128,7 +129,7 @@ sub update
       {
         svn('propset', 'svn:executable', 'on', $file);
       }
-      if(! -x $file && $exe{"$file"})
+      if((! -x $file) && $exe{"$file"})
       {
         if($exe{"$file"})
         {
