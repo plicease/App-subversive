@@ -128,9 +128,12 @@ sub update
       {
         svn('propset', 'svn:executable', 'on', $file);
       }
-      elsif($exe{"$file"})
+      else
       {
-        svn('propdel', 'svn:executable', $file);
+        if($exe{"$file"})
+        {
+          svn('propdel', 'svn:executable', $file);
+        }
       }
     }
     
