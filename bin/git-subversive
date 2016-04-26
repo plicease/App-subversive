@@ -32,7 +32,7 @@ management reasons we need a Subversion repository copy as as a backup, but
 we do everything in C<git>.  This is a terrible idea, but I am doing it because
 I have to.
 
-In order to export commits to the subversion repository with the correct
+In order to export commits to the Subversion repository with the correct
 dates, you will need to add a C<pre-revprop-change> hook.  Basically put a 
 C<sh> script in the hooks directory of your Subversion repository with the
 name C<pre-revprop-change> hook with this content:

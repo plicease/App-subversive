@@ -23,6 +23,24 @@ management reasons we need a Subversion repository copy as as a backup, but
 we do everything in `git`.  This is a terrible idea, but I am doing it because
 I have to.
 
+In order to export commits to the Subversion repository with the correct
+dates, you will need to add a `pre-revprop-change` hook.  Basically put a 
+`sh` script in the hooks directory of your Subversion repository with the
+name `pre-revprop-change` hook with this content:
+
+    #!/bin/sh
+    REPOS="$1"
+    REV="$2"
+    USER="$3"
+    PROPNAME="$4"
+    ACTION="$5"
+    
+    if [ "$ACTION" = "M" -a "$PROPNAME" = "svn:log" ]; then exit 0; fi
+    if [ "$ACTION" = "M" -a "$PROPNAME" = "svn:date" ]; then exit 0; fi
+    
+    echo "Changing revision properties other than svn:log is prohibited" >&2
+    exit 1
+
 # SUBCOMMANDS
 
 ## update

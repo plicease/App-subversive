@@ -13,15 +13,14 @@ $modules{$_} = $_ for qw(
   Capture::Tiny
   DBD::SQLite
   DBI
+  Email::Address
   ExtUtils::MakeMaker
-  File::Temp
   File::chdir
-  Getopt::Long
-  Pod::Usage
+  Git::Wrapper
+  Path::Class
   Test::More
   Test::Script
   YAML::XS
-  lib
 );
 
 
