@@ -101,11 +101,11 @@ sub update
     my @svn_dirs;
     File::Find::find(sub {
 
-      if(-f $File::Find::name)
+      if(-f $_)
       {
         my $file = file($File::Find::name);
         return if grep /^\.svn$/, $file->components;
-        unlink $file;
+        unlink $_;
       }
       else
       {
@@ -138,6 +138,11 @@ sub update
         svn('rm', '--force' => $file);
       }
     }
+    
+    while(my @empty = find_empty())
+    {
+      svn('rm', '--force' => @empty);
+    }
 
     svn('commit', 
       -m => $log->message . "\n\ngit commit: @{[ $log->id ]}", 
@@ -154,6 +159,21 @@ sub update
   }
   
   0;
+}
+
+sub find_empty
+{
+  my @empty;
+  File::Find::find(sub {
+    return unless -d $_;
+    my $dir = dir($File::Find::name);
+    return if grep /^\.svn$/, $dir->components;
+    unless(grep !/^\.svn$/, dir($_)->children)
+    {
+      push @empty, $dir;
+    }
+  }, '.');
+  @empty;
 }
 
 sub svn
