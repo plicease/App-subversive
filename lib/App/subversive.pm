@@ -47,6 +47,7 @@ sub update
     exit 2;
   }
 
+  if(defined $SET{GIT_COMMIT})
   {
     my $git = Git::Wrapper->new('.');
     if([$git->log('-1', 'master')]->[0]->id eq $SET{GIT_COMMIT})
